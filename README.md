@@ -14,11 +14,12 @@ The project includes both the required backend logic and a fully functional fron
 - **Robust Backend**: Built with FastAPI, featuring structured logging and proper error handling.
 
 ## Project Structure
-.
-├── backend/        # Contains all backend FastAPI logic
+.  
+├── backend/        # Contains all backend FastAPI logic  
 ├── .env            # Configuration file for models, etc.
-├── README.md       # This file
-└── requirements.txt  # Python dependencies
+├── app.py
+├── README.md       # This file  
+└── requirements.txt  # Python dependencies  
 
 ## Setup & Installation
 
