@@ -3,8 +3,6 @@
 import os
 from pydantic_settings import BaseSettings
 
-# Load the .env file from the parent directory of the 'backend' folder
-# This makes the settings accessible regardless of where the script is run from
 env_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env")
 
 class Settings(BaseSettings):
@@ -20,5 +18,4 @@ class Settings(BaseSettings):
         env_file = env_path
         env_file_encoding = 'utf-8'
 
-# Create a single settings instance to be imported by other modules
 settings = Settings()

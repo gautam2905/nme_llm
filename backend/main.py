@@ -8,27 +8,19 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-# Import settings and sanitizer logic from other modules
 from .config import settings
 from .sanitizer import sanitize_prompt_advanced
 
 # --- 1. INITIALIZATION & CONFIGURATION ---
 
-# Setup structured logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-# Create a FastAPI application instance
 app = FastAPI(
     title=settings.API_TITLE,
     version=settings.API_VERSION,
     description="An API to detect PII, sanitize the prompt, and get a response from a local LLM."
 )
 
-# Mount the 'frontend' directory to serve static files (like script.js)
-# app.mount("/frontend", StaticFiles(directory="frontend"), name="frontend")
-
-
-# Load the spaCy model once at startup
 try:
     nlp = spacy.load(settings.SPACY_MODEL)
     logging.info(f"Successfully loaded spaCy model: {settings.SPACY_MODEL}")
@@ -37,7 +29,6 @@ except OSError:
     logging.error(f"Please run 'python -m spacy download {settings.SPACY_MODEL}' to install it.")
     exit()
 
-# Pydantic model for the request body
 class PromptRequest(BaseModel):
     prompt: str
 
@@ -48,7 +39,6 @@ async def read_root():
     """
     Serve the main HTML file for the user interface.
     """
-    # return FileResponse('frontend/index.html')
 
 
 @app.post("/api/process_prompt/")

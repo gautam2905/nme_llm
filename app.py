@@ -9,17 +9,15 @@ st.set_page_config(
 )
 
 # --- STYLING for PII Highlighting ---
-# Define styles for different entity types, similar to the CSS.
 entity_colors = {
     "PERSON": "#ffab91",
     "GPE": "#80cbc4",
     "LOC": "#80cbc4",
     "ORG": "#90caf9",
     "DATE": "#fff59d",
-    "DEFAULT": "#f0f2f6" # A default color for other entity types
+    "DEFAULT": "#f0f2f6" 
 }
 
-# This is a bit of CSS to make the colored spans look nice.
 st.markdown("""
 <style>
     .entity {
@@ -38,7 +36,6 @@ def generate_highlighted_text(original_text, entities):
     """
     Generates an HTML string with PII entities highlighted using colored spans.
     """
-    # Sort entities by start character in reverse order to avoid index issues
     sorted_entities = sorted(entities, key=lambda e: e['start_char'], reverse=True)
     
     highlighted_text = original_text
@@ -47,17 +44,14 @@ def generate_highlighted_text(original_text, entities):
         end = entity['end_char']
         label = entity['label']
         
-        # Get the color for the entity type, or a default
         color = entity_colors.get(label, entity_colors["DEFAULT"])
         
-        # Create the styled span
         span = (
             f'<span class="entity" style="background-color: {color}">'
             f'{highlighted_text[start:end]}'
             f'</span>'
         )
         
-        # Replace the original text with the highlighted version
         highlighted_text = highlighted_text[:start] + span + highlighted_text[end:]
         
     return highlighted_text
@@ -67,8 +61,6 @@ def generate_highlighted_text(original_text, entities):
 st.title("PrivChat: Sanitize & Paraphrase 🤖")
 st.markdown("Enter text below to detect and sanitize PII before sending it to a local LLM for paraphrasing.")
 
-# The FastAPI backend URL
-# This assumes you are running the backend locally on the default port.
 FASTAPI_URL = "http://127.0.0.1:8000/api/process_prompt/"
 
 # --- Input Form ---
@@ -84,16 +76,13 @@ with st.form("prompt_form"):
 if submitted and prompt_text:
     with st.spinner("Processing... Calling backend API, running NER, and querying the LLM."):
         try:
-            # Make a request to the FastAPI backend
             response = requests.post(FASTAPI_URL, json={"prompt": prompt_text})
             
-            # Check if the request was successful
             if response.status_code == 200:
                 data = response.json()
 
                 st.subheader("Results")
                 
-                # Create two columns for a cleaner layout
                 col1, col2 = st.columns(2)
 
                 with col1:
@@ -111,15 +100,12 @@ if submitted and prompt_text:
                     temp_data = {
                         "Entity": [ent["text"] for ent in data["detected_entities"]],
                         "Label": [ent["label"] for ent in data["detected_entities"]],
-                        # "Start": [ent["start_char"] for ent in data["detected_entities"]],
-                        # "End": [ent["end_char"] for ent in data["detected_entities"]],
                     }
                     st.table(temp_data)
                 else:
                     st.write("No PII entities were detected.")
 
             else:
-                # Show error from FastAPI backend
                 error_detail = response.json().get("detail", "Unknown error")
                 st.error(f"Error from backend: {error_detail} (Status code: {response.status_code})")
 

@@ -19,13 +19,10 @@ def sanitize_prompt_advanced(doc):
     replacements = []
 
     for ent in doc.ents:
-        # Increment the count for the current entity label
         entity_counts[ent.label_] += 1
-        # Create a unique, indexed label (e.g., [PERSON_1])
         indexed_label = f"[{ent.label_}_{entity_counts[ent.label_]}]"
         replacements.append((ent.start_char, ent.end_char, indexed_label))
 
-    # Replace entities in reverse to maintain correct character indices
     for start, end, label in sorted(replacements, key=lambda x: x[0], reverse=True):
         sanitized_prompt = sanitized_prompt[:start] + label + sanitized_prompt[end:]
 
