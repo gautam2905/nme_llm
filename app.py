@@ -108,7 +108,13 @@ if submitted and prompt_text:
                 st.markdown("---")
                 st.markdown("#### Detected Entities (from spaCy)")
                 if data["detected_entities"]:
-                    st.table(data["detected_entities"])
+                    temp_data = {
+                        "Entity": [ent["text"] for ent in data["detected_entities"]],
+                        "Label": [ent["label"] for ent in data["detected_entities"]],
+                        # "Start": [ent["start_char"] for ent in data["detected_entities"]],
+                        # "End": [ent["end_char"] for ent in data["detected_entities"]],
+                    }
+                    st.table(temp_data)
                 else:
                     st.write("No PII entities were detected.")
 

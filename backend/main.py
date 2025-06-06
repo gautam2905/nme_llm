@@ -25,7 +25,7 @@ app = FastAPI(
 )
 
 # Mount the 'frontend' directory to serve static files (like script.js)
-app.mount("/frontend", StaticFiles(directory="frontend"), name="frontend")
+# app.mount("/frontend", StaticFiles(directory="frontend"), name="frontend")
 
 
 # Load the spaCy model once at startup
@@ -48,7 +48,7 @@ async def read_root():
     """
     Serve the main HTML file for the user interface.
     """
-    return FileResponse('frontend/index.html')
+    # return FileResponse('frontend/index.html')
 
 
 @app.post("/api/process_prompt/")
