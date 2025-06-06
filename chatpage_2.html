@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>PrivChat – PII Detection</title>
+  <style>
+    /* --------------------
+       GLOBAL RESET
+       -------------------- */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    html, body {
+      width: 100%;
+      height: 100%;
+      background: #121212;
+      color: #E0E0E0;
+      font-family: "SF Pro Text", "Segoe UI", sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    
+    /* --------------------
+       WINDOW FRAME (MAC-STYLE)
+       -------------------- */
+    .window {
+      display: flex;
+      flex-direction: column;
+      width: 900px;
+      height: 600px;
+      background: rgba(18, 18, 18, 0.96);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
+      margin: 50px auto;
+    }
+    
+    .titlebar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 50px;
+      background: rgba(30, 30, 30, 0.8);
+      backdrop-filter: blur(10px);
+      padding: 0 20px;
+      border-bottom: 1px solid #242424;
+      user-select: none;
+    }
+    
+    .hamburger {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      cursor: pointer;
+      padding: 8px;
+    }
+    
+    .hamburger-line {
+      width: 18px;
+      height: 2px;
+      background: #A0A0A0;
+      border-radius: 1px;
+      transition: all 0.2s ease;
+    }
+    
+    .hamburger:hover .hamburger-line {
+      background: #00FF66;
+    }
+    
+    .title {
+      font-family: "SF Mono", monospace;
+      font-size: 18px;
+      font-weight: 600;
+      color: #00FF66;
+      text-shadow: 0 0 8px rgba(0, 255, 102, 0.6);
+    }
+    
+    .settings-icon {
+      width: 24px;
+      height: 24px;
+      cursor: pointer;
+      fill: #A0A0A0;
+      transition: fill 0.2s ease;
+    }
+    
+    .settings-icon:hover {
+      fill: #00FF66;
+    }
+
+    /* --------------------
+       MAIN CONTENT LAYOUT
+       -------------------- */
+    .content {
+      flex: 1;
+      display: flex;
+      padding: 20px;
+      gap: 20px;
+    }
+    
+    /* --------------------
+       SIDEBAR (LEFT)
+       -------------------- */
+    .sidebar {
+      width: 180px;
+      background: rgba(240, 240, 240, 0.05);
+      border: 1px solid #242424;
+      border-radius: 16px;
+      padding: 20px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    
+    .chat-space-btn {
+      background: rgba(18, 18, 18, 0.8);
+      border: 2px solid #242424;
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin: 0 16px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      color: #A0A0A0;
+      font-size: 16px;
+      font-weight: 500;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .chat-space-btn:hover {
+      border-color: #00FF66;
+      color: #E0E0E0;
+      transform: translateX(4px);
+    }
+    
+    .chat-space-btn.active {
+      border-color: #00FF66;
+      color: #00FF66;
+      background: rgba(0, 255, 102, 0.1);
+      transform: translateX(4px);
+    }
+    
+    .chat-space-btn.active::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      background: #00FF66;
+      border-top-right-radius: 2px;
+      border-bottom-right-radius: 2px;
+    }
+
+    /* --------------------
+       CHAT WINDOW (TOP RIGHT)
+       -------------------- */
+    .chat-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    
+    .chat-window {
+      background: rgba(240, 240, 240, 0.05);
+      border: 1px solid #242424;
+      border-radius: 16px;
+      padding: 24px;
+      height: 200px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      position: relative;
+      backdrop-filter: blur(10px);
+    }
+    
+    .chat-prompt {
+      font-size: 18px;
+      color: #E0E0E0;
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+    
+    .chat-example {
+      font-size: 20px;
+      color: #A0A0A0;
+      font-weight: 400;
+      line-height: 1.4;
+      margin-bottom: 16px;
+    }
+    
+    .pii-highlight-orange {
+      background: rgba(255, 165, 0, 0.3);
+      color: #FFA500;
+      padding: 4px 8px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 165, 0, 0.5);
+      box-shadow: 0 0 12px rgba(255, 165, 0, 0.4);
+      animation: piiPulseOrange 2s ease-in-out infinite;
+      font-weight: 600;
+    }
+    
+    .pii-highlight-blue {
+      background: rgba(0, 191, 255, 0.3);
+      color: #00BFFF;
+      padding: 4px 8px;
+      border-radius: 6px;
+      border: 1px solid rgba(0, 191, 255, 0.5);
+      box-shadow: 0 0 12px rgba(0, 191, 255, 0.4);
+      animation: piiPulseBlue 2s ease-in-out infinite;
+      font-weight: 600;
+    }
+    
+    @keyframes piiPulseOrange {
+      0%, 100% { box-shadow: 0 0 12px rgba(255, 165, 0, 0.4); }
+      50% { box-shadow: 0 0 20px rgba(255, 165, 0, 0.8); }
+    }
+    
+    @keyframes piiPulseBlue {
+      0%, 100% { box-shadow: 0 0 12px rgba(0, 191, 255, 0.4); }
+      50% { box-shadow: 0 0 20px rgba(0, 191, 255, 0.8); }
+    }
+    
+    .pii-status {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(0, 255, 102, 0.1);
+      border: 1px solid rgba(0, 255, 102, 0.3);
+      border-radius: 20px;
+      padding: 6px 12px;
+      font-size: 12px;
+      color: #00FF66;
+      font-weight: 500;
+    }
+    
+    .pii-status::before {
+      content: '⚠️';
+      font-size: 14px;
+    }
+    
+    .pii-info-btn {
+      width: 20px;
+      height: 20px;
+      background: rgba(0, 255, 102, 0.15);
+      border: 1px solid rgba(0, 255, 102, 0.4);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #00FF66;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      margin-left: 4px;
+    }
+    
+    .pii-info-btn:hover {
+      background: rgba(0, 255, 102, 0.25);
+      border-color: rgba(0, 255, 102, 0.6);
+      transform: scale(1.1);
+    }
+    
+    .user-icon {
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      width: 32px;
+      height: 32px;
+      border: 2px solid #00FF66;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 255, 102, 0.1);
+      color: #00FF66;
+      font-size: 16px;
+    }
+    
+    /* --------------------
+       EMPTY SPACE / PII DETAILS
+       -------------------- */
+    .empty-space {
+      flex: 1;
+      background: rgba(240, 240, 240, 0.02);
+      border: 1px solid #1a1a1a;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #666;
+      font-size: 14px;
+      font-style: italic;
+    }
+    
+    .pii-details {
+      flex: 1;
+      background: rgba(240, 240, 240, 0.02);
+      border: 1px solid #1a1a1a;
+      border-radius: 16px;
+      padding: 24px;
+      display: none;
+      flex-direction: column;
+      gap: 16px;
+      animation: slideInUp 0.3s ease forwards;
+    }
+    
+    .pii-details.active {
+      display: flex;
+    }
+    
+    @keyframes slideInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .pii-details-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    
+    .pii-details-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #00FF66;
+      text-shadow: 0 0 8px rgba(0, 255, 102, 0.4);
+    }
+    
+    .pii-count {
+      background: rgba(0, 255, 102, 0.2);
+      color: #00FF66;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      border: 1px solid rgba(0, 255, 102, 0.4);
+    }
+    
+    .close-btn {
+      width: 24px;
+      height: 24px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #A0A0A0;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    .close-btn:hover {
+      background: rgba(255, 255, 255, 0.15);
+      color: #E0E0E0;
+    }
+    
+    .pii-item {
+      background: rgba(240, 240, 240, 0.05);
+      border: 1px solid #242424;
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: all 0.3s ease;
+    }
+    
+    .pii-item.orange {
+      border-color: rgba(255, 165, 0, 0.3);
+      background: rgba(255, 165, 0, 0.08);
+    }
+    
+    .pii-item.blue {
+      border-color: rgba(0, 191, 255, 0.3);
+      background: rgba(0, 191, 255, 0.08);
+    }
+    
+    .pii-item:hover {
+      transform: translateY(-2px);
+    }
+    
+    .pii-item.orange:hover {
+      background: rgba(255, 165, 0, 0.12);
+      border-color: rgba(255, 165, 0, 0.4);
+    }
+    
+    .pii-item.blue:hover {
+      background: rgba(0, 191, 255, 0.12);
+      border-color: rgba(0, 191, 255, 0.4);
+    }
+    
+    .pii-info {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    
+    .pii-type {
+      font-size: 14px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .pii-type.orange {
+      color: #FFA500;
+    }
+    
+    .pii-type.blue {
+      color: #00BFFF;
+    }
+    
+    .pii-value {
+      font-size: 16px;
+      color: #E0E0E0;
+      font-weight: 500;
+    }
+    
+    .pii-confidence {
+      padding: 4px 8px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      border: 1px solid;
+    }
+    
+    .pii-confidence.orange {
+      background: rgba(255, 165, 0, 0.3);
+      color: #FFA500;
+      border-color: rgba(255, 165, 0, 0.5);
+    }
+    
+    .pii-confidence.blue {
+      background: rgba(0, 191, 255, 0.3);
+      color: #00BFFF;
+      border-color: rgba(0, 191, 255, 0.5);
+    }
+    
+    /* --------------------
+       ANIMATIONS
+       -------------------- */
+    .chat-window {
+      opacity: 0;
+      transform: translateY(-10px);
+      animation: slideInDown 0.5s ease forwards;
+    }
+    
+    @keyframes slideInDown {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .chat-space-btn {
+      opacity: 0;
+      transform: translateX(-20px);
+      animation: slideInRight 0.5s ease forwards;
+    }
+    
+    .chat-space-btn:nth-child(1) { animation-delay: 0.1s; }
+    .chat-space-btn:nth-child(2) { animation-delay: 0.2s; }
+    
+    @keyframes slideInRight {
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+    
+    .pii-item {
+      opacity: 0;
+      transform: translateX(20px);
+      animation: slideInLeft 0.5s ease forwards;
+    }
+    
+    .pii-item:nth-child(2) { animation-delay: 0.1s; }
+    .pii-item:nth-child(3) { animation-delay: 0.2s; }
+    .pii-item:nth-child(4) { animation-delay: 0.3s; }
+    
+    @keyframes slideInLeft {
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="window">
+    <!-- Title Bar -->
+    <div class="titlebar">
+      <div class="hamburger">
+        <div class="hamburger-line"></div>
+        <div class="hamburger-line"></div>
+        <div class="hamburger-line"></div>
+      </div>
+      <div class="title">PrivChat</div>
+      <svg class="settings-icon" viewBox="0 0 24 24">
+        <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 9V7L19 6.5C18.5 4.9 17.5 3.5 16.1 2.4L17 1L15.6 0L14.1 1.5C12.9 1 11.4 1 10.1 1.5L8.6 0L7.2 1L8.1 2.4C6.7 3.5 5.7 4.9 5.2 6.5L3 7V9L5.2 9.5C5.7 11.1 6.7 12.5 8.1 13.6L7.2 15L8.6 16L10.1 14.5C11.3 15 12.8 15 14.1 14.5L15.6 16L17 15L16.1 13.6C17.5 12.5 18.5 11.1 19 9.5L21 9ZM12 8C14.2 8 16 9.8 16 12S14.2 16 12 16S8 14.2 8 12S9.8 8 12 8Z"/>
+      </svg>
+    </div>
+
+    <!-- Main Content -->
+    <div class="content">
+      <!-- Sidebar -->
+      <div class="sidebar">
+        <div class="chat-space-btn active" onclick="selectChatSpace(this, 1)">
+          Chat space 1
+        </div>
+        <div class="chat-space-btn" onclick="selectChatSpace(this, 2)">
+          Chat space 2
+        </div>
+      </div>
+
+      <!-- Chat Container -->
+      <div class="chat-container">
+        <!-- Chat Window (Top Right) -->
+        <div class="chat-window">
+          <div class="chat-prompt">Paraphrase this:</div>
+          <div class="chat-example" id="chatExample">
+            <span class="pii-highlight-orange">John Doe</span> lives in <span class="pii-highlight-blue">Dublin, CA</span>.
+          </div>
+          <div class="pii-status">
+            PII Detected
+            <div class="pii-info-btn" onclick="togglePiiDetails()">i</div>
+          </div>
+          <div class="user-icon">👤</div>
+        </div>
+        
+        <!-- Empty Space / PII Details Panel -->
+        <div class="empty-space" id="emptySpace">
+          Additional content area
+        </div>
+        
+        <div class="pii-details" id="piiDetails">
+          <div class="pii-details-header">
+            <div>
+              <div class="pii-details-title">Detected PII (Sanitized before sending to API)</div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div class="pii-count" id="piiCount">2 items</div>
+              <div class="close-btn" onclick="togglePiiDetails()">×</div>
+            </div>
+          </div>
+          
+
+          
+
+          <div id="piiItemsList">
+            <div class="pii-item orange">
+              <div class="pii-info">
+                <div class="pii-type orange">Person Name</div>
+                <div class="pii-value">John Doe</div>
+              </div>
+              <div class="pii-confidence orange">95%</div>
+            </div>
+            
+            <div class="pii-item blue">
+              <div class="pii-info">
+                <div class="pii-type blue">Location</div>
+                <div class="pii-value">Dublin, CA</div>
+              </div>
+              <div class="pii-confidence blue">88%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let isPiiDetailsVisible = false;
+    let currentChatSpace = 1;
+    
+    function togglePiiDetails() {
+      const emptySpace = document.getElementById('emptySpace');
+      const piiDetails = document.getElementById('piiDetails');
+      
+      isPiiDetailsVisible = !isPiiDetailsVisible;
+      
+      if (isPiiDetailsVisible) {
+        emptySpace.style.display = 'none';
+        piiDetails.classList.add('active');
+      } else {
+        emptySpace.style.display = 'flex';
+        piiDetails.classList.remove('active');
+      }
+    }
+    
+    function selectChatSpace(element, spaceNumber) {
+      // Remove active class from all buttons
+      const allButtons = document.querySelectorAll('.chat-space-btn');
+      allButtons.forEach(btn => btn.classList.remove('active'));
+      
+      // Add active class to clicked button
+      element.classList.add('active');
+      
+      currentChatSpace = spaceNumber;
+      
+      // Update chat content based on selected space
+      const chatExample = document.getElementById('chatExample');
+      const piiCount = document.getElementById('piiCount');
+      const piiItemsList = document.getElementById('piiItemsList');
+      
+      if (spaceNumber === 1) {
+        chatExample.innerHTML = '<span class="pii-highlight-orange">John Doe</span> lives in <span class="pii-highlight-blue">Dublin, CA</span>.';
+        piiCount.textContent = '2 items';
+        piiItemsList.innerHTML = `
+          <div class="pii-item orange">
+            <div class="pii-info">
+              <div class="pii-type orange">Person Name</div>
+              <div class="pii-value">John Doe</div>
+            </div>
+            <div class="pii-confidence orange">95%</div>
+          </div>
+          
+          <div class="pii-item blue">
+            <div class="pii-info">
+              <div class="pii-type blue">Location</div>
+              <div class="pii-value">Dublin, CA</div>
+            </div>
+            <div class="pii-confidence blue">88%</div>
+          </div>
+        `;
+      } else if (spaceNumber === 2) {
+        chatExample.innerHTML = 'Contact <span class="pii-highlight-orange">sarah.johnson@email.com</span> at <span class="pii-highlight-blue">(555) 123-4567</span>';
+        piiCount.textContent = '2 items';
+        piiItemsList.innerHTML = `
+          <div class="pii-item orange">
+            <div class="pii-info">
+              <div class="pii-type orange">Email Address</div>
+              <div class="pii-value">sarah.johnson@email.com</div>
+            </div>
+            <div class="pii-confidence orange">97%</div>
+          </div>
+          
+          <div class="pii-item blue">
+            <div class="pii-info">
+              <div class="pii-type blue">Phone Number</div>
+              <div class="pii-value">(555) 123-4567</div>
+            </div>
+            <div class="pii-confidence blue">92%</div>
+          </div>
+        `;
+      }
+      
+      // Add a subtle animation to the chat window
+      const chatWindow = document.querySelector('.chat-window');
+      chatWindow.style.transform = 'scale(0.98)';
+      chatWindow.style.opacity = '0.8';
+      
+      setTimeout(() => {
+        chatWindow.style.transform = 'scale(1)';
+        chatWindow.style.opacity = '1';
+      }, 150);
+    }
+  </script>
+</body>
+</html>
