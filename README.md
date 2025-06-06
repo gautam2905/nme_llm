@@ -16,8 +16,8 @@ The project includes both the required backend logic and a fully functional fron
 ## Project Structure
 .  
 ├── backend/        # Contains all backend FastAPI logic  
-├── .env            # Configuration file for models, etc.
-├── app.py
+├── .env            # Configuration file for models, etc.  
+├── app.py          # streamlit frontend app  
 ├── README.md       # This file  
 └── requirements.txt  # Python dependencies  
 
