@@ -10,7 +10,7 @@ The project includes both the required backend logic and a fully functional fron
 - **Advanced Sanitization**: Replaces detected PII with indexed labels (e.g., `[PERSON_1]`, `[LOCATION_1]`) to preserve context for the LLM.
 - **LLM Integration**: Connects to a local LLM via Ollama's REST API for paraphrasing.
 - **Web Interface**: A simple and intuitive GUI, built with streamlit, that highlights detected PII and displays the LLM's response.
-- **Configuration-Driven**: Settings like model names are managed via a `.env` file for easy modification.
+- **Configuration-Driven**: Settings like model names are managed via a config file for easy modification.
 - **Robust Backend**: Built with FastAPI, featuring structured logging and proper error handling.
 
 ## Project Structure
@@ -54,7 +54,7 @@ The project includes both the required backend logic and a fully functional fron
     ```
 
 5.  **Configure the application:**
-    - The project comes with a default `.env` file. You can edit `backend/.env` to change the `OLLAMA_MODEL` if needed.
+    - The project comes with a default config file. You can edit `backend/config.py` to change the `OLLAMA_MODEL` if needed.
 
 ## Running the Application
 
