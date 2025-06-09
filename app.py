@@ -53,7 +53,9 @@ def generate_highlighted_text(original_text, entities):
 st.title("PrivChatBot")
 st.markdown("Enter text below to detect and sanitize PII before sending it to a local LLM for paraphrasing.")
 
-FASTAPI_URL = "http://127.0.0.1:8000/api/process_prompt/"
+# FAST API part
+
+FASTAPI_URL = "http://127.0.0.1:8000/api/process_prompt"
 
 with st.form("prompt_form"):
     prompt_text = st.text_area(
@@ -70,7 +72,7 @@ if submitted and prompt_text:
             
             if response.status_code == 200:
                 data = response.json()
-
+                print(data)  # Debugging line to check the response structure
                 st.subheader("Results")
                 
                 col1, col2 = st.columns(2)
@@ -81,9 +83,20 @@ if submitted and prompt_text:
                     st.markdown(highlighted_html, unsafe_allow_html=True)
 
                 with col2:
-                    st.markdown("#### Sanitized Prompt to send to API ")
+                    st.markdown("#### Sanitized Prompt")
+                    st.info(data["sanitized_prompt"])
+
+                st.markdown("---")
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    st.markdown("#### Output from LLM of sanitized prompt")
                     st.info(data["llm_response"])
 
+                with col2:
+                    st.markdown("#### Final output after adding entities")
+                    st.info(data["sanitized_response"])
+            
                 st.markdown("---")
                 st.markdown("#### Detected Entities (from spaCy)")
                 if data["detected_entities"]:

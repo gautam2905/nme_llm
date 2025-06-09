@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     OLLAMA_MODEL: str = "llama3"
     API_TITLE: str = "PrivChat API"
     API_VERSION: str = "1.1.0"
+    REST_API_URL: str = "http://localhost:11434/api/generate"
 
     class Config:
         env_file = env_path
