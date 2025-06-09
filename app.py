@@ -1,14 +1,11 @@
 import streamlit as st
 import requests
 
-# --- PAGE CONFIGURATION ---
 st.set_page_config(
     page_title="PrivChat",
-    page_icon="🤖",
     layout="wide"
 )
 
-# --- STYLING for PII Highlighting ---
 entity_colors = {
     "PERSON": "#ffab91",
     "GPE": "#80cbc4",
@@ -31,11 +28,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-# --- HELPER FUNCTION ---
 def generate_highlighted_text(original_text, entities):
-    """
-    Generates an HTML string with PII entities highlighted using colored spans.
-    """
     sorted_entities = sorted(entities, key=lambda e: e['start_char'], reverse=True)
     
     highlighted_text = original_text
@@ -57,22 +50,19 @@ def generate_highlighted_text(original_text, entities):
     return highlighted_text
 
 
-# --- MAIN APP INTERFACE ---
-st.title("PrivChat: Sanitize & Paraphrase 🤖")
+st.title("PrivChatBot")
 st.markdown("Enter text below to detect and sanitize PII before sending it to a local LLM for paraphrasing.")
 
 FASTAPI_URL = "http://127.0.0.1:8000/api/process_prompt/"
 
-# --- Input Form ---
 with st.form("prompt_form"):
     prompt_text = st.text_area(
         "Enter your prompt here:", 
         "John Doe from Acme Inc. is visiting his colleague, Jane Smith, in Berlin next week.",
         height=150
     )
-    submitted = st.form_submit_button("Sanitize & Paraphrase")
+    submitted = st.form_submit_button("Send Prompt")
 
-# --- Processing and Output ---
 if submitted and prompt_text:
     with st.spinner("Processing... Calling backend API, running NER, and querying the LLM."):
         try:
@@ -86,12 +76,12 @@ if submitted and prompt_text:
                 col1, col2 = st.columns(2)
 
                 with col1:
-                    st.markdown("#### Highlighted PII in Prompt")
+                    st.markdown("#### Detected PII in Prompt")
                     highlighted_html = generate_highlighted_text(data["original_prompt"], data["detected_entities"])
                     st.markdown(highlighted_html, unsafe_allow_html=True)
 
                 with col2:
-                    st.markdown("#### LLM's Paraphrased Response")
+                    st.markdown("#### Sanitized Prompt to send to API ")
                     st.info(data["llm_response"])
 
                 st.markdown("---")
